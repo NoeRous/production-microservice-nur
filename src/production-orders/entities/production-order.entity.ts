@@ -1,10 +1,11 @@
-import { PrimaryGeneratedColumn, CreateDateColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, CreateDateColumn, Column } from 'typeorm';
 
 export enum OrderStatus {
   PENDING = 'pending',
   COMPLETED = 'completed',
 }
 
+@Entity()
 export class ProductionOrder {
   @PrimaryGeneratedColumn('uuid')
   id: string;
