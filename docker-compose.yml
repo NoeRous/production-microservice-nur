@@ -1,0 +1,72 @@
+
+services:
+  production-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3002:3000"
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DB_HOST: production-db
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      DB_DATABASE: production_db
+      KAFKA_BROKER: kafka:9092
+      KAFKA_CLIENT_ID: production-service
+      KAFKA_GROUP_ID: production-service-group
+    depends_on:
+      - production-db
+      - kafka
+    networks:
+      - production-network
+    restart: unless-stopped
+
+  production-db:
+    image: postgres:15-alpine
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: production_db
+    volumes:
+      - production-db-data:/var/lib/postgresql/data
+    networks:
+      - production-network
+    restart: unless-stopped
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - production-network
+    restart: unless-stopped
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+    networks:
+      - production-network
+    restart: unless-stopped
+
+networks:
+  production-network:
+    driver: bridge
+
+volumes:
+  production-db-data:
